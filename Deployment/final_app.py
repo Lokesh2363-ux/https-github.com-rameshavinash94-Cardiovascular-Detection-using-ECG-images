@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import joblib
+import numpy as np
 from Ecg import ECG
 
 # Initialize ECG object
@@ -39,7 +40,7 @@ if uploaded_file is not None:
     """#### **CONVERTING TO 1D SIGNAL**"""
     ecg_1dsignal = ecg.CombineConvert1Dsignal()
     
-    # Debugging info
+    # Debugging Check: Ensure 1D signal is not empty
     st.write("1D Signal Type:", type(ecg_1dsignal))
     st.write("1D Signal Shape:", getattr(ecg_1dsignal, 'shape', 'No shape attribute'))
 
@@ -53,21 +54,37 @@ if uploaded_file is not None:
     """#### **PERFORM DIMENSIONALITY REDUCTION**"""
     pca_model_path = './Deployment/PCA_ECG.pkl'  # Ensure correct path
 
+    # Check if PCA model exists
     if not os.path.exists(pca_model_path):
         st.error(f"Model file '{pca_model_path}' not found. Please upload it.")
-        st.stop()  # Stop execution if model is missing
+        st.stop()
 
     try:
-        pca_loaded_model = joblib.load(pca_model_path)  # Load PCA model
+        # Load PCA model
+        pca_loaded_model = joblib.load(pca_model_path)
         st.write("PCA Model Loaded Successfully.")
 
+        # Ensure input matches PCA model expectation
+        expected_shape = pca_loaded_model.components_.shape[1]
+        st.write("Expected Input Shape for PCA:", expected_shape)
+
+        if isinstance(ecg_1dsignal, np.ndarray) and len(ecg_1dsignal.shape) == 1:
+            ecg_1dsignal = ecg_1dsignal.reshape(1, -1)  # Reshape if 1D
+
+        if ecg_1dsignal.shape[1] != expected_shape:
+            st.error(f"Mismatch in input shape! Expected: {expected_shape}, Got: {ecg_1dsignal.shape[1]}")
+            st.stop()
+
+        # Apply PCA transformation
         ecg_final = ecg.DimensionalReduciton(ecg_1dsignal)
+        st.write("Dimensionality Reduction Successful")
+
         with st.expander(label='Dimensional Reduction'):
             st.write(ecg_final)
-
+    
     except Exception as e:
         st.error(f"Error in dimensionality reduction: {e}")
-        st.stop()  # Stop execution if error occurs
+        st.stop()
 
     """#### **PASS TO PRETRAINED ML MODEL FOR PREDICTION**"""
     try:
