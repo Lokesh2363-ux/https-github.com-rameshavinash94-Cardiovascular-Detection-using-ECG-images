@@ -38,6 +38,15 @@ if uploaded_file is not None:
 
     """#### **CONVERTING TO 1D SIGNAL**"""
     ecg_1dsignal = ecg.CombineConvert1Dsignal()
+    
+    # Debugging info
+    st.write("1D Signal Type:", type(ecg_1dsignal))
+    st.write("1D Signal Shape:", getattr(ecg_1dsignal, 'shape', 'No shape attribute'))
+
+    if ecg_1dsignal is None or (hasattr(ecg_1dsignal, 'size') and ecg_1dsignal.size == 0):
+        st.error("Error: 1D Signal is empty or invalid.")
+        st.stop()
+
     with st.expander(label='1D Signals'):
         st.write(ecg_1dsignal)
 
@@ -50,9 +59,12 @@ if uploaded_file is not None:
 
     try:
         pca_loaded_model = joblib.load(pca_model_path)  # Load PCA model
+        st.write("PCA Model Loaded Successfully.")
+
         ecg_final = ecg.DimensionalReduciton(ecg_1dsignal)
         with st.expander(label='Dimensional Reduction'):
             st.write(ecg_final)
+
     except Exception as e:
         st.error(f"Error in dimensionality reduction: {e}")
         st.stop()  # Stop execution if error occurs
