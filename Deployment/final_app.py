@@ -54,16 +54,23 @@ if uploaded_file is not None:
         st.stop()  # Stop execution if model is missing
 
     try:
-        pca_loaded_model = joblib.load(pca_model_path)  # Load PCA model
-
-        # Debugging: Check input shape before PCA
-        st.write(f"Original Signal Shape before PCA: {ecg_1dsignal.shape}")
+        # Load PCA model
+        pca_loaded_model = joblib.load(pca_model_path)
+        
+        # Get number of components PCA expects
+        expected_features = pca_loaded_model.n_components_
+        st.write(f"PCA Model expects {expected_features} features.")
 
         # Ensure input shape matches expected PCA input format
         if len(ecg_1dsignal.shape) == 1:
-            ecg_1dsignal = ecg_1dsignal.reshape(1, -1)
+            ecg_1dsignal = ecg_1dsignal.reshape(1, -1)  # Reshape to 2D
 
         st.write(f"Reshaped 1D Signal for PCA: {ecg_1dsignal.shape}")
+
+        # Check if input matches PCA expected features
+        if ecg_1dsignal.shape[1] != expected_features:
+            st.error(f"Shape mismatch: PCA expects {expected_features} features but got {ecg_1dsignal.shape[1]}.")
+            st.stop()
 
         ecg_final = ecg.DimensionalReduciton(ecg_1dsignal)
 
